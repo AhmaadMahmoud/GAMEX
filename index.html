@@ -328,6 +328,19 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
 #bike{position:absolute;top:210px;left:-140px;width:116px;height:72px;pointer-events:none}
 #bike.go{animation:bikego 4.5s linear}
 @keyframes bikego{from{left:-140px}to{left:100%}}
+/* night & ramadan */
+body.night{background:linear-gradient(#050817,#0b1030 45%,#1a2150)}
+#world.night #tuk,#world.night #dog,#world.night #bike,#world.night #mes{filter:brightness(.6) saturate(.85)}
+#world.night #box::before{content:"";position:absolute;left:-140px;right:-140px;top:-60px;height:560px;background:radial-gradient(closest-side,rgba(255,204,120,.32),rgba(255,204,120,0));pointer-events:none;z-index:0}
+#mes{position:absolute;top:192px;left:100%;width:92px;height:92px;pointer-events:none}
+#mes svg{width:100%;height:100%;display:block;overflow:visible}
+#mes.go{animation:mesgo 15s linear}
+@keyframes mesgo{from{left:100%}to{left:-140px}}
+#mes .mleg{transform-box:fill-box;transform-origin:50% 0;animation:leg .45s ease-in-out infinite alternate}
+#mes .mleg.b{animation-delay:-.22s}
+#mes.drum .stick{animation:drumhit .25s 4}
+@keyframes drumhit{50%{transform:rotate(-25deg)}}
+#mes .stick{transform-box:fill-box;transform-origin:100% 100%}
 /* map & level cards */
 .panel.wide{width:min(440px,100%)}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
@@ -413,6 +426,7 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
       <div id="bg"></div>
       <div id="tuk"></div>
       <div id="bike"></div>
+      <div id="mes"><span class="say">اصحى يا نايم</span></div>
       <div id="dog"><span class="say">هو هو!</span></div>
       <div id="rain"></div>
       <div id="box">
@@ -915,15 +929,54 @@ const THEMES = {
   metro:{ sky:['#d3bea3','#e5d7c2','#f1eadf'], sun:'#fff8ee', far:'#c9bba7', fac:['#c9b8a0','#b8a891','#a99a86','#d6c7ae','#9c8f7e','#c2a98c'], shops:['موبايلات','صرافة','ملابس','عصير قصب','أحذية','كشري'], curb:['#f2f2f2','#c62828'], tile:['#bdb6ab','#9f978b'], brick:.3, hMin:430, hVar:200, laundry:.4, shut:['#3d5e7a','#2e6b4a','#555b60'] },
   alex:{ sky:['#4fa8e0','#9fd6f2','#e6f5fb'], sun:'#ffffff', curb:['#f2f2f2','#1d6fb8'], tile:['#e6d8bb','#cbbb98'] }
 };
+let NIGHT = false, RAMADAN = false, LIT = '';
+function nightSky(W){
+  const r = rng(5);
+  let s = '';
+  for (let i = 0; i < W / 9; i++) s += `<circle cx="${r() * W}" cy="${120 + r() * 360}" r="${.6 + r() * 1.4}" fill="#fff" opacity="${.4 + r() * .6}"/>`;
+  const mx = W * .78, my = 400;
+  s += `<circle cx="${mx}" cy="${my}" r="90" fill="#fff3c4" opacity=".08"/><circle cx="${mx}" cy="${my}" r="34" fill="#fff3c4"/><circle cx="${mx + 14}" cy="${my - 8}" r="30" fill="#141a40"/>`;
+  if (RAMADAN) s += `<path d="M${mx - 52} ${my - 30}l3.5 7.5 8 .9-6 5.4 1.7 7.9-7.2-4.1-7.2 4.1 1.7-7.9-6-5.4 8-.9z" fill="#fff3c4"/>`;
+  return s;
+}
+function ramadanDeco(W){
+  const cols = ['#d32f2f','#fbc02d','#388e3c','#1976d2','#8e24aa'];
+  let s = '';
+  [[560, 26], [650, 30]].forEach(([y0, sag], li) => {
+    let d = `M0 ${y0}`;
+    for (let x = 0; x <= W; x += 20) d += ` L${x} ${y0 + sag * 4 * (x / W) * (1 - x / W)}`;
+    s += `<path d="${d}" stroke="#2b1a0f" stroke-width="1.4" fill="none"/>`;
+    for (let x = 6, i = li; x < W - 14; x += 22, i++) { const y = y0 + sag * 4 * (x / W) * (1 - x / W); s += `<path d="M${x} ${y}h16l-8 18z" fill="${cols[i % cols.length]}"/>`; }
+  });
+  for (let x = 90; x < W - 40; x += 190) {
+    const y = 560 + 26 * 4 * (x / W) * (1 - x / W), c = cols[(x / 190 | 0) % cols.length];
+    s += `<path d="M${x} ${y}v22" stroke="#2b1a0f" stroke-width="1.2"/><circle cx="${x}" cy="${y + 44}" r="30" fill="#ffcf6a" opacity=".22"/>
+      <path d="M${x - 8} ${y + 26}h16l-3-4h-10z" fill="#c9a24a"/><path d="M${x - 10} ${y + 28}h20l-4 26h-12z" fill="#ffe08a" stroke="#8a6a22" stroke-width="1.6"/>
+      <path d="M${x - 4} ${y + 28}l-1.5 26M${x + 4} ${y + 28}l1.5 26" stroke="${c}" stroke-width="3" opacity=".85"/><path d="M${x - 7} ${y + 54}h14l-7 8z" fill="#c9a24a"/>`;
+  }
+  const bx = W / 2;
+  s += `<path d="M${bx - 150} 430h300v52H${bx - 150}z" fill="#1f6f3f" stroke="#f2c230" stroke-width="3"/><path d="M${bx - 150} 482l14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 14-12 14 12 6-5" fill="#c8322a"/>
+    <text x="${bx}" y="467" text-anchor="middle" font-family="Aref Ruqaa, serif" font-weight="700" font-size="30" fill="#ffe08a">رمضان كريم</text>
+    <path d="M${bx - 150} 430L${bx - 210} 400M${bx + 150} 430L${bx + 210} 400" stroke="#2b1a0f" stroke-width="1.4"/>`;
+  return s;
+}
+function nightEnd(W, G){
+  if (!NIGHT) return '';
+  let s = '</g>' + LIT;
+  for (let k = 130; k < W; k += 300) s += `<path d="M${k} ${G + 44}V${G - 150}" stroke="#151826" stroke-width="5"/><circle cx="${k}" cy="${G - 150}" r="100" fill="url(#lampglow)"/><circle cx="${k}" cy="${G - 152}" r="6" fill="#fff3c4"/>`;
+  if (RAMADAN) s += ramadanDeco(W);
+  return s;
+}
 function streetDefs(W, T){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 1278" width="${W}" height="1278" aria-hidden="true"><defs>
     <linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.sky[0]}"/><stop offset=".45" stop-color="${T.sky[1]}"/><stop offset="1" stop-color="${T.sky[2]}"/></linearGradient>
     <linearGradient id="seag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f6fa8"/><stop offset=".6" stop-color="#3f9bd2"/><stop offset="1" stop-color="#7cc7e8"/></linearGradient>
     <pattern id="tiles" width="40" height="20" patternUnits="userSpaceOnUse"><rect width="40" height="20" fill="${T.tile[0]}"/><path d="M0 .5H40M20 0v10M0 10.5H40M10 10v10M30 10v10" stroke="${T.tile[1]}" stroke-width="1"/></pattern>
     <pattern id="brick" width="16" height="8" patternUnits="userSpaceOnUse"><rect width="16" height="8" fill="#b5523a"/><path d="M0 .5H16M8 0v4M0 4.5H16M0 4v4M16 4v4" stroke="#8a3a28" stroke-width="1"/></pattern>
+    ${NIGHT ? '<filter id="dim"><feColorMatrix type="matrix" values=".34 0 0 0 .015  0 .37 0 0 .025  0 0 .5 0 .07  0 0 0 1 0"/></filter><radialGradient id="lampglow"><stop offset="0" stop-color="#ffd27a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient><linearGradient id="nightsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060a20"/><stop offset=".55" stop-color="#141a40"/><stop offset="1" stop-color="#2c2a55"/></linearGradient>' : ''}
   </defs>
-  <rect width="${W}" height="1278" fill="url(#skyg)"/>
-  <circle cx="${W * .82}" cy="250" r="150" fill="${T.sun}" opacity=".3"/><circle cx="${W * .82}" cy="250" r="60" fill="${T.sun}" opacity=".9"/>`;
+  <rect width="${W}" height="1278" fill="url(#${NIGHT ? 'nightsky' : 'skyg'})"/>
+  ${NIGHT ? nightSky(W) + '<g filter="url(#dim)">' : `<circle cx="${W * .82}" cy="250" r="150" fill="${T.sun}" opacity=".3"/><circle cx="${W * .82}" cy="250" r="60" fill="${T.sun}" opacity=".9"/>`}`;
 }
 function streetGround(W, T, G){
   let s = `<rect x="0" y="${G}" width="${W}" height="46" fill="#5d5650"/><path d="M0 ${G + 23}H${W}" stroke="#d9d2c7" stroke-width="2" stroke-dasharray="22 18" opacity=".5"/>`;
@@ -946,7 +999,7 @@ function buildSea(W){
   s += `<path d="M0 ${G - 60}H${W}M0 ${G - 50}H${W}" stroke="#1d6fb8" stroke-width="3"/>`;
   for (let k = 6; k < W; k += 18) s += `<path d="M${k} ${G - 62}v22" stroke="#1d6fb8" stroke-width="2.5"/>`;
   for (let k = 120; k < W; k += 300) s += `<path d="M${k} ${G}V${G - 200}" stroke="#2b3a44" stroke-width="5"/><path d="M${k - 26} ${G - 196}h52" stroke="#2b3a44" stroke-width="4"/><circle cx="${k - 26}" cy="${G - 186}" r="7" fill="#fff6d0" stroke="#2b3a44" stroke-width="2"/><circle cx="${k + 26}" cy="${G - 186}" r="7" fill="#fff6d0" stroke="#2b3a44" stroke-width="2"/>`;
-  return s + streetGround(W, T, G) + '</svg>';
+  return s + streetGround(W, T, G) + nightEnd(W, G) + '</svg>';
 }
 const MODERN = {
   tagamoa:{ sky:['#6fb6ec','#b4dcf5','#eef6fb'], sun:'#ffffff', curb:['#f2c230','#1f1f1f'], tile:['#cfcac2','#b3ada3'], fac:['#eceff1','#d7dde2','#e8dccb','#cfd8dc'], far:'#b8cddd', shops:['كافيه','جيم','صيدلية','سوبر ماركت','مخبوزات','موبايلات'], seed:61 },
@@ -961,7 +1014,7 @@ function palm(x, G, h){
   return s + `<circle cx="${tx}" cy="${ty + 3}" r="5" fill="#6d4c2f"/>`;
 }
 function buildModern(W, key){
-  const T = MODERN[key], r = rng(T.seed), G = 710;
+  const T = MODERN[key], r = rng(T.seed), G = 710, rl = rng(T.seed + 7);
   let s = streetDefs(W, T);
   s += `<g fill="${T.far}">`;
   if (key === 'october') { for (let x = -100; x < W + 100; x += 260) s += `<path d="M${x} ${G - 120}q130-${80 + r() * 50} 260 0z"/>`; }
@@ -974,7 +1027,7 @@ function buildModern(W, key){
     s += `<rect x="${x}" y="${top}" width="${w}" height="${h}" fill="${col}"/><rect x="${x + w - 8}" y="${top}" width="8" height="${h}" fill="#000" opacity=".07"/><rect x="${x - 4}" y="${top - 8}" width="${w + 8}" height="8" fill="${shade(col, -.2)}"/>`;
     const glassW = w * (.45 + r() * .3), gx = x + (w - glassW) / 2;
     s += `<rect x="${gx}" y="${top + 16}" width="${glassW}" height="${h - 120}" fill="#5d8fb8"/>`;
-    for (let yy = top + 16; yy < G - 104; yy += 26) s += `<path d="M${gx} ${yy}h${glassW}" stroke="#dfeaf2" stroke-width="2"/>`;
+    for (let yy = top + 16; yy < G - 104; yy += 26) { s += `<path d="M${gx} ${yy}h${glassW}" stroke="#dfeaf2" stroke-width="2"/>`; if (NIGHT) for (let xx = gx + 2; xx < gx + glassW - 26; xx += 30) if (rl() < .4) LIT += `<rect x="${xx}" y="${yy + 3}" width="26" height="20" fill="#ffd27a" opacity=".85"/>`; }
     for (let xx = gx; xx < gx + glassW; xx += 30) s += `<path d="M${xx} ${top + 16}v${h - 120}" stroke="#dfeaf2" stroke-width="2"/>`;
     s += `<path d="M${gx + 6} ${G - 110}l${glassW * .5} -${(h - 130) * .9}" stroke="#ffffff" stroke-width="10" opacity=".18"/>`;
     s += `<rect x="${x + 8}" y="${G - 74}" width="${w - 16}" height="74" fill="#9fc3dc"/><path d="M${x + 8 + (w - 16) / 3} ${G - 74}v74M${x + 8 + 2 * (w - 16) / 3} ${G - 74}v74" stroke="#e8f1f7" stroke-width="3"/>`;
@@ -982,9 +1035,10 @@ function buildModern(W, key){
     x += w + 10 + r() * 30;
   }
   for (let k = 60 + r() * 60; k < W; k += 170 + r() * 80) s += palm(k, G + 2, 150 + r() * 70);
-  return s + streetGround(W, T, G) + '</svg>';
+  return s + streetGround(W, T, G) + nightEnd(W, G) + '</svg>';
 }
 function buildStreet(W, key = 'hara'){
+  LIT = '';
   if (key === 'alex') return buildSea(W);
   if (MODERN[key]) return buildModern(W, key);
   const T = THEMES[key], r = rng(key === 'hara' ? 11 : key === 'uni' ? 31 : 47), G = 710;
@@ -1035,7 +1089,7 @@ function buildStreet(W, key = 'hara'){
           s += `<path d="M${wx + 12} ${fy}v36" stroke="#000" stroke-width="1" opacity=".35"/>`;
         } else {
           s += `<rect x="${wx}" y="${fy}" width="24" height="36" fill="#3b2a24"/><rect x="${wx - 6}" y="${fy}" width="6" height="36" fill="${shut}"/><rect x="${wx + 24}" y="${fy}" width="6" height="36" fill="${shut}"/>`;
-          if (r() < .3) s += `<rect x="${wx + 3}" y="${fy + 4}" width="18" height="28" fill="#ffd27a" opacity=".55"/>`;
+          if (r() < (NIGHT ? .55 : .3)) { const lw = `<rect x="${wx + 3}" y="${fy + 4}" width="18" height="28" fill="#ffd27a" opacity="${NIGHT ? .95 : .55}"/>`; if (NIGHT) LIT += lw; else s += lw; }
         }
         s += `<rect x="${wx - 3}" y="${fy - 4}" width="30" height="4" fill="${dark}"/>`;
       }
@@ -1086,10 +1140,18 @@ function buildStreet(W, key = 'hara'){
   }
   s += streetGround(W, T, G);
   const cx = W * .5 - 250;
-  if (key === 'hara' && cx > 10) s += `<g transform="translate(${cx} ${G + 34})"><ellipse cx="14" cy="10" rx="16" ry="8" fill="#e08a3a"/><circle cx="-2" cy="6" r="7" fill="#e08a3a"/><path d="M-7 1l1-7 4 5zM1 0l3-6 1 7z" fill="#e08a3a"/><path d="M28 12q10 0 8-8" stroke="#e08a3a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M-5 6h3M0 6h3" stroke="#3b2a1a" stroke-width="1.2"/><path d="M6 6q8-5 16 0" stroke="#b5651d" stroke-width="2" fill="none"/></g>`;
-  return s + '</svg>';
+  if (key === 'hara' && cx > 10 && !NIGHT) s += `<g transform="translate(${cx} ${G + 34})"><ellipse cx="14" cy="10" rx="16" ry="8" fill="#e08a3a"/><circle cx="-2" cy="6" r="7" fill="#e08a3a"/><path d="M-7 1l1-7 4 5zM1 0l3-6 1 7z" fill="#e08a3a"/><path d="M28 12q10 0 8-8" stroke="#e08a3a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M-5 6h3M0 6h3" stroke="#3b2a1a" stroke-width="1.2"/><path d="M6 6q8-5 16 0" stroke="#b5651d" stroke-width="2" fill="none"/></g>`;
+  return s + nightEnd(W, G) + '</svg>';
 }
 function locThumb(key){
+  if (key === 'night' || key === 'ramadan') {
+    let s = `<svg viewBox="0 0 320 96" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="320" height="96" fill="#10163a"/>`;
+    for (let i = 0; i < 26; i++) s += `<circle cx="${(i * 53) % 320}" cy="${(i * 29) % 50 + 4}" r="1.2" fill="#fff" opacity=".8"/>`;
+    s += `<circle cx="262" cy="22" r="13" fill="#fff3c4"/><circle cx="268" cy="18" r="11" fill="#10163a"/>`;
+    [[0,34,70],[66,22,60],[122,40,64],[182,26,70],[248,36,76]].forEach(([x, y, w]) => { s += `<rect x="${x}" y="${y}" width="${w}" height="${96 - y}" fill="#2a2d4a"/>`; for (let wy = y + 8; wy < 80; wy += 16) for (let wx = x + 8; wx < x + w - 12; wx += 16) s += `<rect x="${wx}" y="${wy}" width="8" height="10" fill="${(wx + wy) % 3 ? '#ffd27a' : '#1b1d33'}"/>`; });
+    if (key === 'ramadan') { s += `<path d="M0 40Q160 62 320 40" stroke="#000" fill="none"/>`; for (let x = 6, i = 0; x < 310; x += 18, i++) { const y = 40 + 22 * 4 * (x / 320) * (1 - x / 320) * .5; s += `<path d="M${x} ${y}h12l-6 12z" fill="${['#d32f2f','#fbc02d','#388e3c','#1976d2'][i % 4]}"/>`; } s += `<rect x="150" y="54" width="14" height="20" rx="3" fill="#ffe08a"/><circle cx="157" cy="64" r="16" fill="#ffcf6a" opacity=".3"/>`; }
+    return s + '</svg>';
+  }
   if (MODERN[key]) { const T = MODERN[key]; return `<svg viewBox="0 0 320 96" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="th-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.sky[0]}"/><stop offset="1" stop-color="${T.sky[2]}"/></linearGradient></defs><rect width="320" height="96" fill="url(#th-${key})"/>${key === 'october' ? '<path d="M-20 70q90-40 180 0zM140 70q90-34 200 0z" fill="#e2cfa8"/>' : ''}<g>${[[20,30,70],[110,14,80],[210,26,90]].map(([x,y,w]) => `<rect x="${x}" y="${y}" width="${w}" height="${96 - y}" fill="${T.fac[0]}"/><rect x="${x + 12}" y="${y + 8}" width="${w - 24}" height="${70 - y}" fill="#5d8fb8"/>`).join('')}</g><path d="M95 96q3-30-2-52" stroke="#8a6a44" stroke-width="5" fill="none"/><path d="M93 44q-14-8-24 4M93 44q12-10 24 2M93 44q-4-14-14-16M93 44q8-14 18-12" stroke="#2f8a3e" stroke-width="4" fill="none"/><rect x="0" y="86" width="320" height="10" fill="${T.tile[0]}"/></svg>`; }
   const T = THEMES[key];
   let s = `<svg viewBox="0 0 320 96" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="th-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.sky[0]}"/><stop offset="1" stop-color="${T.sky[2]}"/></linearGradient></defs><rect width="320" height="96" fill="url(#th-${key})"/>`;
@@ -1186,7 +1248,9 @@ const LOCS = [
   { key:'alex',  name:'كورنيش إسكندرية',   short:'إسكندرية', mult:1.3,  cart:2, desc:'هوا البحر بيفتح النفس، والزباين بيدفعوا أكتر.' },
   { key:'tagamoa', name:'التجمع الخامس', short:'التجمع', mult:1.55, rest:true, cost:5000,  desc:'أول فرع لمطعم عم صابر: شوارع واسعة وكمباوندات، والزباين بيطلبوا كتير.' },
   { key:'october', name:'٦ أكتوبر',      short:'أكتوبر', mult:1.7,  rest:true, cost:9000,  desc:'فرع جديد جنب الجامعات والكمباوندات، والطلبات مش بتقف.' },
-  { key:'zayed',   name:'الشيخ زايد',    short:'زايد',   mult:1.9,  rest:true, cost:14000, desc:'أكبر فرع: زباين بيدوّروا على أحسن فطار، وبيدفعوا أحسن سعر.' }
+  { key:'zayed',   name:'الشيخ زايد',    short:'زايد',   mult:1.9,  rest:true, cost:14000, desc:'أكبر فرع: زباين بيدوّروا على أحسن فطار، وبيدفعوا أحسن سعر.' },
+  { key:'night',   name:'سهرة بالليل',   short:'بالليل',  mult:1.15, req:4, dg:4, mode:'night',   clock:[21 * 60, 240], streets:['hara','uni','metro','alex','hara'], desc:'الشوارع منورة بالليل، والناس راجعة من السهر جعانة.' },
+  { key:'ramadan', name:'سحور رمضان',    short:'رمضان',   mult:1.25, req:9, dg:7, mode:'ramadan', clock:[30, 210],      streets:['hara','hara','metro','uni','hara'], desc:'فوانيس وزينة والمسحراتي معدّي، والكل عايز يتسحّر فول قبل الفجر.' }
 ];
 const REST = { name:'مطعم عم صابر', mult:1.3, pat:1.25, batch:6, w:620, slots:4, tables:2 };
 const CART = [
@@ -1197,11 +1261,13 @@ const CART = [
 const LEVELS = LOCS.length * 5;
 function LV(g){
   const li = Math.floor(g / 5), n = g % 5, loc = LOCS[li], boss = n === 4;
-  return { g, li, n, loc, boss,
-    unlock: Math.min(5, g + 1),
-    target: Math.round((110 + g * 28) * loc.mult * (boss ? 1.25 : 1) / 5) * 5,
-    interval: Math.max(2.8, 8 - g * .3) * (boss ? .8 : 1),
-    pat: Math.max(12, 27 - g * .9),
+  const d = loc.dg !== undefined ? loc.dg + n : g;
+  return { g, li, n, loc, boss, d,
+    street: loc.streets ? loc.streets[n] : loc.key, mode: loc.mode || 'day', clock: loc.clock || [360, 300],
+    unlock: Math.min(5, d + 1),
+    target: Math.round((110 + d * 28) * loc.mult * (boss ? 1.25 : 1) / 5) * 5,
+    interval: Math.max(2.8, 8 - d * .3) * (boss ? .8 : 1),
+    pat: Math.max(12, 27 - d * .9),
     len: boss ? 110 : 95 };
 }
 const MARKET = [
@@ -1238,10 +1304,10 @@ function loadSave(name){
 }
 const st = { screen:'title', paused:false, muted: store.get('ful.muted', false), player: profiles().current, save:null, run:null, cur:0, mapLi:0 };
 st.save = loadSave(st.player);
-let curLocKey = 'hara';
+let curLocKey = 'hara|day';
 const stars = g => st.save.stars[g] || 0;
 const locStars = li => [0, 1, 2, 3, 4].reduce((a, n) => a + stars(li * 5 + n), 0);
-const locOpen = li => li === 0 || (stars(li * 5 - 1) > 0 && (LOCS[li].rest ? !!st.save.branches[LOCS[li].key] : st.save.up.cart >= LOCS[li].cart));
+const locOpen = li => li === 0 || (LOCS[li].req !== undefined ? stars(LOCS[li].req) > 0 : (stars(li * 5 - 1) > 0 && (LOCS[li].rest ? !!st.save.branches[LOCS[li].key] : st.save.up.cart >= LOCS[li].cart)));
 const isRest = () => !!LV(st.cur).loc.rest;
 const venue = () => isRest() ? REST : CART[st.save.up.cart];
 const levelOpen = g => g >= 0 && g < LEVELS && locOpen(Math.floor(g / 5)) && (g % 5 === 0 || stars(g - 1) > 0);
@@ -1501,7 +1567,7 @@ function fillSlot(i, c){
 }
 function personFor(L){
   const p = genPerson();
-  if (L.loc.key === 'uni' && !p.female && p.head !== 'taqiya' && Math.random() < .45) { p.top = 'hoodie'; p.tc = pick(TOPC); p.head = pick(['short','cap']); p.cc = p.cc || '#1d4f9c'; p.mus = false; }
+  if ((L.loc.key === 'uni' || L.loc.key === 'night') && !p.female && p.head !== 'taqiya' && Math.random() < .45) { p.top = 'hoodie'; p.tc = pick(TOPC); p.head = pick(['short','cap']); p.cc = p.cc || '#1d4f9c'; p.mus = false; }
   if (L.loc.key === 'metro' && !p.female && p.head !== 'taqiya' && Math.random() < .35) { p.top = 'suit'; p.tc = pick(['#2b2f3a','#3a3f4f','#4a3b2f']); }
   return p;
 }
@@ -1635,9 +1701,9 @@ function updateHud(){
   $('#earn').textContent = ar(earned);
   $('#target').textContent = ar(tgt);
   $('#goalBar').style.width = Math.min(100, earned / tgt * 100) + '%';
-  const t = r ? Math.min(1, r.t / r.len) : 0, mins = Math.floor(360 + t * 300);
-  const h = Math.floor(mins / 60), m = mins % 60;
-  $('#clock').textContent = ar(h) + ':' + ar(String(Math.floor(m / 5) * 5).padStart(2, '0')) + ' ص';
+  const t = r ? Math.min(1, r.t / r.len) : 0, mins = Math.floor(L.clock[0] + t * L.clock[1]) % 1440;
+  const h24 = Math.floor(mins / 60), m = mins % 60, h12 = h24 % 12 || 12;
+  $('#clock').textContent = ar(h12) + ':' + ar(String(Math.floor(m / 5) * 5).padStart(2, '0')) + (h24 < 12 ? ' ص' : ' م');
   const sk = r ? r.angry : 0;
   if (sk !== lastStrikes) { lastStrikes = sk; [...$('#strikes').children].forEach((el, i) => el.classList.toggle('on', i < sk)); }
 }
@@ -1903,7 +1969,29 @@ function sendDog(){
   return true;
 }
 dogEl.addEventListener('animationend', e => { if (e.animationName === 'dogwalk') dogEl.classList.remove('go', 'bark'); });
+const mesEl = $('#mes');
+mesEl.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 92 92" aria-hidden="true"><ellipse cx="46" cy="89" rx="24" ry="3" fill="#000" opacity=".2"/>
+<rect class="mleg" x="36" y="64" width="7" height="24" rx="3" fill="#6d4c2f"/><rect class="mleg b" x="48" y="64" width="7" height="24" rx="3" fill="#6d4c2f"/>
+<path d="M28 82q-2-30 6-42h24q8 12 6 42z" fill="#f2efe6"/><path d="M46 42v38" stroke="#d6d0c0" stroke-width="2"/>
+<circle cx="46" cy="30" r="11" fill="#c98d5f"/><path d="M34 26q12-14 24 0q-12-6-24 0z" fill="#ffffff"/><path d="M33 27q13-4 26 0" stroke="#d6d0c0" stroke-width="3"/>
+<path d="M40 36q6 3 12 0" stroke="#4a3324" stroke-width="2.4" fill="none"/>
+<ellipse cx="26" cy="54" rx="11" ry="9" fill="#c8322a" stroke="#7a1d14" stroke-width="2"/><ellipse cx="26" cy="51" rx="9" ry="5" fill="#f3dfb6"/>
+<path class="stick" d="M24 40l14 6" stroke="#5a3418" stroke-width="3" stroke-linecap="round"/></svg>`);
+mesEl.addEventListener('animationend', e => { if (e.animationName === 'mesgo') mesEl.classList.remove('go', 'drum'); });
+let mesIn = 8, crIn = 10;
+function sendMes(){
+  if (reduce || mesEl.classList.contains('go')) return;
+  mesEl.classList.add('go');
+  setTimeout(() => {
+    if (!mesEl.classList.contains('go') || st.paused) return;
+    mesEl.classList.add('drum'); sayBubble(mesEl, 2200);
+    [0, .3, .9, 1.2].forEach(d => tone(120, .22, 'sine', .22, 55, d));
+  }, 5500);
+}
 function tickAnimals(dt){
+  const md = LV(st.cur).mode;
+  if (md === 'ramadan') { mesIn -= dt; if (mesIn <= 0) { sendMes(); mesIn = 30 + Math.random() * 15; } }
+  if (md === 'night') { crIn -= dt; if (crIn <= 0) { crIn = 14 + Math.random() * 12; for (let k = 0; k < 6; k++) tone(4300, .05, 'sine', .02, null, k * .09 + (k > 2 ? .25 : 0)); } }
   meowIn -= dt;
   if (meowIn <= 0) { meow(); meowIn = 24 + Math.random() * 22; }
   dogIn -= dt;
@@ -1962,9 +2050,11 @@ function applyCart(){
   lastW = 0; layout();
 }
 function applyLoc(){
-  const key = LV(st.cur).loc.key;
+  const L = LV(st.cur), key = L.street, bgKey = key + '|' + L.mode;
   if ((isRest() ? 'rest' : 'cart') !== curMode) applyCart();
-  if (key !== curLocKey) { curLocKey = key; lastW = 0; layout(); }
+  world.classList.toggle('night', L.mode !== 'day'); world.classList.toggle('ramadan', L.mode === 'ramadan');
+  document.body.classList.toggle('night', L.mode !== 'day');
+  if (bgKey !== curLocKey) { curLocKey = bgKey; lastW = 0; layout(); }
   const veh = key === 'metro' ? 'micro' : key === 'alex' ? 'taxi' : isRest() ? 'car' : 'tuk';
   if (veh !== curVeh) { curVeh = veh; tuk.innerHTML = VEH[veh].svg; tuk.style.width = VEH[veh].w + 'px'; tuk.style.top = VEH[veh].top + 'px'; }
 }
@@ -2126,7 +2216,8 @@ function showMap(li){
   if (open) body = `<div class="levels">${[0, 1, 2, 3, 4].map(n => levelCard(li * 5 + n, fr)).join('')}</div>`;
   else {
     const needs = [];
-    if (stars(li * 5 - 1) === 0) needs.push(`خلّص يوم الزحمة في ${LOCS[li - 1].name}`);
+    const reqG = loc.req !== undefined ? loc.req : li * 5 - 1;
+    if (stars(reqG) === 0) needs.push(`خلّص يوم الزحمة في ${LOCS[Math.floor(reqG / 5)].name}`);
     if (loc.rest && !st.save.branches[loc.key]) needs.push(`افتح فرع ${loc.name} من "طوّر شغلك" بـ ${ar(loc.cost)} جنيه`);
     else if (!loc.rest && st.save.up.cart < loc.cart) needs.push(`كبّر العربية لحد ما تبقى ${CART[loc.cart].name}`);
     body = `<div class="need">المكان ده لسه مقفول. عشان تفتحه:<br>${needs.map(x => '• ' + x).join('<br>')}</div>`;
@@ -2204,6 +2295,8 @@ function endDay(reason){
   let note = '';
   if (passed && next >= LEVELS) note = 'خلّصت كل الأماكن! عم صابر بقى أشهر عربية فول في مصر.';
   else if (passed && L.boss && nextOpen) note = `فتحت مكان جديد: ${LOCS[L.li + 1].name}!`;
+  const freshUnlocks = LOCS.filter(l => l.req === L.g);
+  if (passed && before === 0 && freshUnlocks.length) note = (note ? note + ' ' : '') + 'واتفتحت ليفلات ' + freshUnlocks.map(l => l.name).join(' و') + ' في الخريطة!';
   else if (passed && L.boss && !nextOpen) { const nl = LOCS[L.li + 1]; note = nl.rest ? `جاهز تفتح مطعم بجد؟ افتح فرع ${nl.name} من "طوّر شغلك" بـ ${ar(nl.cost)} جنيه.` : `عشان تروح ${nl.name} محتاج ${CART[nl.cart].name}. كبّر العربية من "طوّر شغلك".`; }
   const head = passed ? [L.boss ? 'عدّيت يوم الزحمة!' : 'يوم حلو يا معلم!', note || `${L.loc.short}: اليوم ${ar(L.n + 1)} خلص والعربية كسبت.`]
     : reason === 'angry' ? ['اليوم قفل بدري', '٥ زباين مشيوا زعلانين. حاول تسرع شوية.']
@@ -2331,7 +2424,7 @@ function layout(){
   world.style.transform = `scale(${s})`;
   box.style.left = Math.round((W - LW) / 2) + 'px';
   bg.style.width = W + 'px';
-  if (Math.abs(W - lastW) > 3) { bg.innerHTML = buildStreet(W, curLocKey); lastW = W; }
+  if (Math.abs(W - lastW) > 3) { const [k, m] = curLocKey.split('|'); NIGHT = !!m && m !== 'day'; RAMADAN = m === 'ramadan'; bg.innerHTML = buildStreet(W, k); NIGHT = RAMADAN = false; lastW = W; }
 }
 if (window.ResizeObserver) new ResizeObserver(layout).observe(play);
 window.addEventListener('resize', layout);
