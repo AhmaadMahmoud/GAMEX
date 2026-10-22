@@ -40,7 +40,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .day{display:flex;flex-direction:column;align-items:flex-start;min-width:84px}
 .day b{font-weight:800;font-size:13px;white-space:nowrap}
 .day .row{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
-.strikes{display:flex;gap:2px}
+.strikes{font-size:11px;font-weight:800;color:var(--red);white-space:nowrap}
 .strikes i{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink);background:transparent}
 .strikes i.on{background:var(--red);border-color:var(--red-d)}
 .goal{flex:1;min-width:0;max-width:460px;margin-inline:auto}
@@ -364,7 +364,7 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
   <header class="hud">
     <div class="chip day">
       <b id="dayLbl">اليوم ١</b>
-      <div class="row"><span id="clock" dir="ltr">٦:٠٠ ص</span><span class="strikes" id="strikes" aria-label="زباين مشيوا زعلانين"><i></i><i></i><i></i></span></div>
+      <div class="row"><span id="clock" dir="ltr">٦:٠٠ ص</span><span class="strikes" id="strikes"></span></div>
     </div>
     <div class="chip goal">
       <div class="goal-top"><span>الإيراد <b id="earn">٠</b></span><span>الهدف <span id="target">١٢٠</span></span></div>
@@ -1504,7 +1504,6 @@ function tickSeats(dt){
     c.mood = f > .55 ? 'happy' : f > .28 ? 'ok' : 'meh';
     if (c.left <= 0) {
       r.seats[k] = null; r.angry++; sfx.angry(); toast('زبون زهق من الانتظار ومشي'); updateHud();
-      if (r.angry >= 3 && st.screen === 'play') { st.screen = 'end'; setTimeout(() => endDay('angry'), 900); }
     }
   });
   renderSeats();
@@ -1565,7 +1564,7 @@ function updateHud(){
   const h = Math.floor(mins / 60), m = mins % 60;
   $('#clock').textContent = ar(h) + ':' + ar(String(Math.floor(m / 5) * 5).padStart(2, '0')) + ' ص';
   const sk = r ? r.angry : 0;
-  if (sk !== lastStrikes) { lastStrikes = sk; [...$('#strikes').children].forEach((el, i) => el.classList.toggle('on', i < sk)); }
+  if (sk !== lastStrikes) { lastStrikes = sk; $('#strikes').textContent = sk ? ar(sk) + ' زعلانين' : ''; }
 }
 
 /* ================= loop ================= */
@@ -1598,7 +1597,6 @@ function update(dt){
       c.state = 'angry';
       const run = r; setTimeout(() => { if (st.run === run) leave(i); }, 800);
       updateHud();
-      if (r.angry >= 3) { st.screen = 'end'; setTimeout(() => endDay('angry'), 900); }
     }
   });
   r.pan.forEach(pc => { if (pc) pc.t += dt; });
@@ -1967,7 +1965,7 @@ function showIntro(g){
     ${L.n === 0 && L.li > 0 ? `<p class="txt">${L.loc.desc}</p>` : ''}
     <div class="goalbox">الهدف <b>${ar(L.target)}</b> جنيه</div>
     ${steps}
-    ${g > 0 ? '<p class="txt">لو ٣ زباين مشيوا زعلانين، اليوم يقفل بدري.</p>' : ''}
+    ${g > 0 ? '<p class="txt">المهم توصل للهدف قبل ما اليوم يخلص.</p>' : ''}
     ${lowStock(L).length ? `<div class="warn">البضاعة قربت تخلص: ${lowStock(L).join('، ')}. هات من السوق قبل ما تفتح.</div>` : ''}
     <div class="btns"><button class="btn" id="openBtn" type="button">${L.loc.rest ? 'افتح المطعم' : 'افتح العربية'}</button><button class="btn alt" id="mktBtn" type="button">السوق</button><button class="btn ghost" id="mapBtn" type="button">الخريطة</button></div>`);
   on('mktBtn', () => showMarket(() => showIntro(g)));
