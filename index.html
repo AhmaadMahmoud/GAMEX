@@ -296,6 +296,38 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
 .seat.busy .qbar{opacity:1}
 .seat .qbar i{display:block;height:100%;width:100%;background:#3aa557}
 .seat .sfront{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* helper, delivery, combo, events */
+.tray{position:absolute;right:-6px;bottom:-4px;z-index:4;border:2px solid var(--ink);border-radius:12px;background:var(--gold);font:800 12px/1 var(--f-ui);padding:6px 8px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.3);white-space:nowrap}
+.tray:active{transform:translateY(2px)}
+.helper{position:absolute;left:-8px;top:-10px;width:36px;height:36px;z-index:4;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.helper.busy{animation:bounce .3s}
+#delivery{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 64px);z-index:19;width:min(200px,50vw);background:var(--paper);border:2px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(43,26,15,.35);padding:8px;display:flex;flex-direction:column;gap:5px}
+#delivery.ring{animation:shake .35s 3}
+.dhead{display:flex;align-items:center;gap:6px;font-weight:800;font-size:13px;line-height:1.3}
+.dhead svg{flex:none;width:22px;height:22px}
+.drow{display:flex;align-items:center;gap:1px;padding:2px 4px;border-radius:8px;background:#fff;min-height:26px}
+.drow svg{width:20px;height:20px}
+.drow.done{opacity:.5;background:#e6f4ea}
+.drow .ok{margin-inline-start:auto;color:var(--green);font-weight:800;font-size:12px}
+.dbar{height:6px;border-radius:6px;background:rgba(0,0,0,.15);overflow:hidden}
+.dbar i{display:block;height:100%;width:100%;background:var(--green)}
+.dfoot{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.dtotal{font-size:12px;font-weight:800;color:var(--green)}
+#bagBtn{font:800 13px var(--f-ui);padding:6px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--red);color:#fff;cursor:pointer;box-shadow:0 3px 0 var(--red-d)}
+#bagBtn:active{transform:translateY(2px)}
+#banner{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);z-index:22;background:var(--ink);color:var(--paper);font-weight:800;font-size:14px;padding:8px 16px;border-radius:14px;max-width:calc(100% - 32px);text-align:center;opacity:0;transition:opacity .25s;pointer-events:none}
+#banner.show{opacity:1}
+#combo{font-size:11px;font-weight:800;background:var(--gold);border:1.5px solid var(--ink);border-radius:8px;padding:0 6px;line-height:16px;white-space:nowrap}
+#combo.pop{animation:pop .3s}
+#world{transition:filter .5s}
+#world.dark{filter:brightness(.55) saturate(.8)}
+#rain{position:absolute;left:0;right:0;top:-400px;bottom:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .5s;
+  background:repeating-linear-gradient(105deg,transparent 0 16px,rgba(225,240,255,.45) 16px 17.5px,transparent 17.5px 34px);animation:rain .45s linear infinite}
+#rain.on{opacity:1}
+@keyframes rain{to{background-position:-24px 70px}}
+#bike{position:absolute;top:210px;left:-140px;width:116px;height:72px;pointer-events:none}
+#bike.go{animation:bikego 4.5s linear}
+@keyframes bikego{from{left:-140px}to{left:100%}}
 /* map & level cards */
 .panel.wide{width:min(440px,100%)}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
@@ -369,7 +401,7 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
       <div class="row"><span id="clock" dir="ltr">٦:٠٠ ص</span><span class="strikes" id="strikes" aria-label="زباين مشيوا زعلانين من ٥"><i></i><i></i><i></i><i></i><i></i></span></div>
     </div>
     <div class="chip goal">
-      <div class="goal-top"><span>الإيراد <b id="earn">٠</b></span><span>الهدف <span id="target">١٢٠</span></span></div>
+      <div class="goal-top"><span>الإيراد <b id="earn">٠</b></span><span id="combo" hidden></span><span>الهدف <span id="target">١٢٠</span></span></div>
       <div class="bar"><i id="goalBar"></i></div>
     </div>
     <button class="hbtn" id="pauseBtn" type="button" aria-label="استراحة"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg></button>
@@ -380,7 +412,9 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
     <div id="world">
       <div id="bg"></div>
       <div id="tuk"></div>
+      <div id="bike"></div>
       <div id="dog"><span class="say">هو هو!</span></div>
+      <div id="rain"></div>
       <div id="box">
         <div class="pole" id="pole1" style="left:4px"></div>
         <div class="pole" id="pole2" style="left:409px"></div>
@@ -414,6 +448,8 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
     </div>
   </div>
 
+  <div id="delivery" hidden></div>
+  <div id="banner" role="status"></div>
   <div id="overlay"></div>
 </div>
 
@@ -458,6 +494,7 @@ const UPG = {
   fridge:{ name:'تلاجة حاجة ساقعة', desc:'الزباين يطلبوا حاجة ساقعة أو مية مع الأكل، وتكسب أكتر', costs:[250] },
   tables:{ name:'ترابيزات', desc:'زباين يقعدوا على ترابيزة وتوصّلهم الأكل، طلبهم أكبر وبيدفعوا أكتر', costs:[300, 650] },
   patience:{ name:'صبر الزباين', desc:'ابتسامة وكوباية مية ببلاش، فالزباين يستنوا وقت أطول قبل ما يزهقوا', costs:[200, 450, 900] },
+  helper:{ name:'صبي يساعدك (حمادة)', desc:'بيحط عجينة الطعمية ويشيلها أول ما تحمر في صينية جنب الطاسة. في المرحلة التانية بيقلي البطاطس كمان وبيشتغل أسرع', costs:[400, 900] },
   boards:{ name:'لوح تجهيز زيادة', desc:'تجهّز أكتر من طلب في نفس الوقت، واضغط على اللوح عشان تختاره. اللوح التالت محتاج عربية ألوميتال أو أكبر', costs:[300, 700] },
   bench:{ name:'ترابيزات على الرصيف', desc:'ترابيزات يمين وشمال العربية: لو المكان زحمة، الزبون يقعد يرتاح لحد ما يفضى مكان', costs:[350, 750] }
 };
@@ -774,6 +811,13 @@ ${[20,24,28,32,36].map(y => `<path d="M9 ${y}h20" stroke="#8a6a3a" stroke-width=
 <rect x="35" y="17" width="19" height="9" rx="2" fill="#fff3d6" stroke="#4e2a12" stroke-width="1"/><path d="M38 21.5h13" stroke="#c49a5a" stroke-width="1"/><path d="M44 18v7" stroke="#d23a2a" stroke-width="1.5"/>
 <circle cx="40" cy="34" r="4.2" fill="#f2c230" stroke="#4e2a12" stroke-width="1.2"/><circle cx="50" cy="34" r="4.2" fill="#f2c230" stroke="#4e2a12" stroke-width="1.2"/>
 </svg>`;
+const HELPER_SVG = `<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="17" fill="#fff3d6" stroke="#2b1a0f" stroke-width="2"/><ellipse cx="18" cy="21" rx="10" ry="11" fill="#d9a47a"/><path d="M8 15q10-12 20 0v-3q-10-9-20 0z" fill="#fff"/><rect x="8" y="12" width="20" height="4" rx="2" fill="#fff" stroke="#d9d9d9"/><circle cx="14.5" cy="21" r="1.4" fill="#2b1a0f"/><circle cx="21.5" cy="21" r="1.4" fill="#2b1a0f"/><path d="M14 26q4 3 8 0" stroke="#7a2a1a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`;
+const PHONE_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" fill="#2b1a0f"/><rect x="8" y="5" width="8" height="12" rx="1" fill="#8fd3ff"/><circle cx="12" cy="19.3" r="1.1" fill="#fff"/></svg>`;
+const BIKE_SVG = `<svg viewBox="0 0 116 72" aria-hidden="true"><ellipse cx="58" cy="68" rx="46" ry="3.5" fill="#000" opacity=".2"/>
+<circle cx="24" cy="56" r="12" fill="#1d1d1d"/><circle cx="24" cy="56" r="5" fill="#c0c7cc"/><circle cx="92" cy="56" r="12" fill="#1d1d1d"/><circle cx="92" cy="56" r="5" fill="#c0c7cc"/>
+<path d="M24 56l20-14h30l18 14" stroke="#c62828" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M84 30l8 26" stroke="#555" stroke-width="4"/><path d="M80 28h12" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+<rect x="8" y="22" width="30" height="24" rx="3" fill="#d32f2f" stroke="#7a1d14" stroke-width="2"/><text x="23" y="38" text-anchor="middle" font-family="Aref Ruqaa, serif" font-weight="700" font-size="9" fill="#fff3d6">صابر</text>
+<path d="M52 42q4-16 16-18" stroke="#1d4f9c" stroke-width="10" stroke-linecap="round" fill="none"/><circle cx="68" cy="16" r="8" fill="#c62828"/><path d="M62 14h12" stroke="#fff" stroke-width="2"/><path d="M66 30l14 0" stroke="#1d4f9c" stroke-width="5" stroke-linecap="round"/></svg>`;
 const ASM_SVG = {
   sandwich:`<svg viewBox="0 0 132 70" aria-hidden="true"><path d="M8 14h116a58 54 0 0 1-116 0z" fill="#c98a45" stroke="#8a5523" stroke-width="2"/><ellipse cx="66" cy="14" rx="58" ry="10" fill="#7a4a20"/><path d="M8 14q58 14 116 0" stroke="#efc98d" stroke-width="5" fill="none"/><g fill="#f3dfb6"><circle cx="40" cy="40" r="2"/><circle cx="70" cy="50" r="2"/><circle cx="92" cy="36" r="2"/><circle cx="56" cy="30" r="1.6"/></g></svg>`,
   plate:`<svg viewBox="0 0 132 70" aria-hidden="true"><ellipse cx="66" cy="40" rx="62" ry="28" fill="#fff" stroke="#2d5ea8" stroke-width="4"/><ellipse cx="66" cy="39" rx="44" ry="18" fill="#eef1f5"/></svg>`
@@ -1129,6 +1173,8 @@ const sfx = {
     nf.type = 'lowpass'; nf.frequency.value = 1400; ng.gain.value = .25;
     n.buffer = b; n.connect(nf).connect(ng).connect(a.destination); n.start(t);
   },
+  phone(){ [0, .18, .5, .68].forEach(d => tone(d % .5 < .1 ? 1450 : 1750, .12, 'square', .045, null, d)); },
+  bike(){ const a = audio(); if (!a) return; tone(90, 1.2, 'sawtooth', .05, 140); },
   win(){ [523, 659, 784, 1046].forEach((f, i) => tone(f, .3, 'triangle', .08, null, i * .12)); }
 };
 
@@ -1177,7 +1223,7 @@ const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 function profiles(){ const p = store.get(PROFILES_KEY, null); return p && Array.isArray(p.list) ? p : { list:[], current:null }; }
 function normSave(raw){
   raw = raw || {};
-  const sv = { v:2, wallet: raw.wallet || 0, up: Object.assign({ pan:0, oil:0, radio:0, cart:0, fridge:0, tables:0, patience:0, bench:0, boards:0 }, raw.up || {}), stars: Object.assign({}, raw.stars || {}), at: raw.at || 0,
+  const sv = { v:2, wallet: raw.wallet || 0, up: Object.assign({ pan:0, oil:0, radio:0, cart:0, fridge:0, tables:0, patience:0, bench:0, boards:0, helper:0 }, raw.up || {}), stars: Object.assign({}, raw.stars || {}), at: raw.at || 0,
     branches: Object.assign({}, raw.branches || {}), stock: Object.assign({}, raw.stock || {}) };
   if (!raw.stock) { const fresh = !raw.wallet && !Object.keys(sv.stars).length; MARKET.forEach(m => { sv.stock[m.k] = fresh ? (['bread','foul','taameya'].includes(m.k) ? 20 : 0) : 25; }); }
   MARKET.forEach(m => { sv.stock[m.k] = Math.max(0, Math.round(Number(sv.stock[m.k]) || 0)); });
@@ -1320,7 +1366,12 @@ function buildPan(n){
     b.addEventListener('click', e => { e.stopPropagation(); tapPiece(i); });
     panEl.appendChild(b); panPieces.push(b);
   }
+  if (st.save.up.helper) {
+    panEl.insertAdjacentHTML('beforeend', `<span class="helper" id="helperAv" title="حمادة">${HELPER_SVG}</span><button class="tray" id="trayBtn" type="button" hidden></button>`);
+    $('#trayBtn').addEventListener('click', e => { e.stopPropagation(); takeTray(); });
+  }
   if (typeof renderStock === 'function') renderStock();
+  if (typeof renderTray === 'function') renderTray();
 }
 function renderLocks(){
   const d = unlockLv();
@@ -1460,7 +1511,7 @@ function spawn(i, waiting){
   const kind = kindOf(p, L.unlock), seated = tableSlot(i);
   const max = L.pat * KIND[kind].pat * patMult() * (seated ? 1.35 : 1);
   const o = genOrder(L.unlock, kind, seated);
-  o.price = Math.round(o.price * L.loc.mult * venue().mult * (seated ? 1.25 : 1));
+  o.price = Math.round(o.price * L.loc.mult * venue().mult * (seated ? 1.25 : 1) * (r.rain > 0 ? 1.3 : 1));
   const left = waiting ? Math.max(max * .3, max * waiting.left / waiting.max) : max;
   const c = { p, kind, seated, tip: KIND[kind].tip, o, max, left, mood:'happy', state:'wait', react:0 };
   r.slots[i].c = c; fillSlot(i, c); if (!waiting) sfx.bell();
@@ -1544,7 +1595,9 @@ function serve(i){
   const hit = ready.find(([b]) => b.type === c.o.type && keyOf(b.items) === keyOf(c.o.items));
   if (hit) {
     const a = hit[0]; r.ab = hit[1];
-    const frac = c.left / c.max, tip = Math.round(c.o.price * .35 * frac * (c.tip || 1)), total = c.o.price + tip;
+    r.combo = (r.combo || 0) + 1;
+    const mult = comboMult(r.combo), frac = c.left / c.max, tip = Math.round(c.o.price * .35 * frac * (c.tip || 1) * mult), total = c.o.price + tip;
+    renderCombo(true); if (mult > 1 && (r.combo === 4 || r.combo === 8)) banner(`كومبو! البقشيش بقى ×${ar(mult)}`, 1800);
     r.earned += total; st.save.wallet += total; r.served++;
     floatAt((LW / slotEls.length) * i + 18, 120, COIN + ar(total) + ' جنيه');
     c.state = 'done'; setMood(c, 'happy'); sfx.coin();
@@ -1554,7 +1607,7 @@ function serve(i){
     const run = r; setTimeout(() => { if (st.run === run) leave(i); }, c.seated ? 4500 : 700);
   } else {
     c.left = Math.max(.6, c.left - c.max * .25);
-    setMood(c, 'meh'); react(c, pick(WRONG), 1.6); sfx.wrong();
+    setMood(c, 'meh'); react(c, pick(WRONG), 1.6); sfx.wrong(); breakCombo();
     c.el.classList.remove('shake'); void c.el.offsetWidth; c.el.classList.add('shake');
   }
 }
@@ -1590,6 +1643,130 @@ function updateHud(){
 }
 
 /* ================= loop ================= */
+/* ---- helper ---- */
+function renderTray(){
+  const b = document.getElementById('trayBtn'); if (!b) return;
+  const n = st.run ? st.run.tray || 0 : 0;
+  b.hidden = !n; b.textContent = 'جاهز ' + ar(n);
+}
+function takeTray(){
+  if (!canPlay()) return;
+  const r = st.run; if (!r.tray) return;
+  if (addItem('taameya')) { r.tray--; sfx.pick(); renderTray(); }
+}
+function helperAct(){
+  const r = st.run, ct = cookT(), av = document.getElementById('helperAv');
+  const done = () => { if (av) { av.classList.remove('busy'); void av.offsetWidth; av.classList.add('busy'); } };
+  for (let i = 0; i < r.pan.length; i++) {
+    const pc = r.pan[i];
+    if (pc && pc.t >= ct + BURN) { r.pan[i] = null; renderPan(); done(); return; }
+    if (pc && pc.t >= ct && r.tray < 6) { r.pan[i] = null; r.tray++; renderPan(); renderTray(); done(); return; }
+  }
+  const cooking = r.pan.filter(Boolean).length;
+  if (r.tray + cooking < 6 && !(r.power > 0)) {
+    const e = r.pan.findIndex(x => !x);
+    if (e >= 0 && hasStock('taameya')) { useStock('taameya'); r.pan[e] = { t:0 }; renderPan(); done(); return; }
+  }
+  if (st.save.up.helper >= 2 && r.fry.state === 'idle' && hasStock('fries') && !(r.power > 0)) {
+    const f = r.fry; f.portions = Math.min(venue().batch, st.save.stock.fries); useStock('fries', f.portions);
+    f.state = 'frying'; f.t = 0; renderFry(); done();
+  }
+}
+/* ---- banner ---- */
+let bannerT = 0;
+function banner(text, ms = 3000){ const b = $('#banner'); b.textContent = text; b.classList.add('show'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('show'), ms); }
+/* ---- combo ---- */
+const comboMult = n => n >= 8 ? 3 : n >= 4 ? 2 : 1;
+function renderCombo(pop){
+  const el = $('#combo'), n = st.run ? st.run.combo || 0 : 0;
+  el.hidden = n < 2;
+  if (n >= 2) { el.textContent = `${ar(n)} ورا بعض${comboMult(n) > 1 ? '، بقشيش ×' + ar(comboMult(n)) : ''}`; if (pop) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } }
+}
+function breakCombo(){ const r = st.run; if (r && r.combo >= 2) toast('الكومبو اتقطع'); if (r) r.combo = 0; renderCombo(); }
+/* ---- delivery ---- */
+const deliveryEl = $('#delivery'), bikeEl = $('#bike');
+bikeEl.innerHTML = BIKE_SVG;
+bikeEl.addEventListener('animationend', () => bikeEl.classList.remove('go'));
+function startDelivery(kind){
+  const r = st.run, L = r.lv, stage = L.unlock;
+  let orders;
+  if (kind === 'bulk') {
+    const base = genOrder(Math.min(stage, 2), 'student', false);
+    base.items = base.items.filter(k => !ITEMS[k].drink);
+    base.type = 'sandwich'; base.price = CONT.sandwich.price + base.items.reduce((a, k) => a + ITEMS[k].price, 0); base.name = orderName(base);
+    orders = Array.from({ length: stage >= 3 ? 5 : 4 }, () => Object.assign({}, base, { done:false }));
+  } else {
+    orders = Array.from({ length: L.g >= 10 ? 3 : 2 }, () => Object.assign(genOrder(stage, 'normal', false), { done:false }));
+  }
+  const total = Math.round(orders.reduce((a, o) => a + o.price, 0) * L.loc.mult * venue().mult * (kind === 'bulk' ? 1.5 : 1.4));
+  const max = kind === 'bulk' ? 85 : 70;
+  r.delivery = { kind, orders, total, max, left: max };
+  sfx.phone(); renderDelivery(true);
+}
+function renderDelivery(ring){
+  const r = st.run, d = r && st.screen === 'play' ? r.delivery : null;
+  deliveryEl.hidden = !d;
+  if (!d) return;
+  deliveryEl.innerHTML = `<div class="dhead">${PHONE_SVG}<span>${d.kind === 'bulk' ? 'طلب جملة من الورشة' : 'طلب دليفري'}</span></div>
+    ${d.kind === 'bulk'
+      ? `<div class="drow" title="${d.orders[0].name}">${ICON[d.orders[0].type]}${d.orders[0].items.map(k => ICON[k]).join('')}<span class="ok">${ar(d.orders.filter(o => o.done).length)} من ${ar(d.orders.length)}</span></div><div class="hint" style="font-size:11.5px;text-align:start">${d.orders[0].name} ×${ar(d.orders.length)}</div>`
+      : d.orders.map(o => `<div class="drow${o.done ? ' done' : ''}" title="${o.name}">${ICON[o.type]}${o.items.map(k => ICON[k]).join('')}${o.done ? '<span class="ok">اتحط</span>' : ''}</div>`).join('')}
+    <div class="dbar"><i></i></div>
+    <div class="dfoot"><span class="dtotal">${ar(d.total)} جنيه</span><button id="bagBtn" type="button">حط في الشنطة</button></div>`;
+  $('#bagBtn').addEventListener('click', bagIt);
+  tickDeliveryBar();
+  if (ring) { deliveryEl.classList.remove('ring'); void deliveryEl.offsetWidth; deliveryEl.classList.add('ring'); }
+}
+function tickDeliveryBar(){
+  const d = st.run && st.run.delivery; if (!d) return;
+  const bar = deliveryEl.querySelector('.dbar i'); if (!bar) return;
+  const f = Math.max(0, d.left / d.max);
+  bar.style.width = (f * 100) + '%'; bar.style.background = `hsl(${f * 120},65%,42%)`;
+}
+function bagIt(){
+  if (!canPlay()) return;
+  const r = st.run, d = r.delivery; if (!d) return;
+  const a = r.asm;
+  if (!a.type || !a.items.length) { toast('جهّز الطلب على اللوح الأول'); return; }
+  const idx = d.orders.findIndex(o => !o.done && o.type === a.type && keyOf(o.items) === keyOf(a.items));
+  if (idx < 0) { toast('ده مش من طلب الدليفري'); sfx.wrong(); return; }
+  d.orders[idx].done = true; a.type = null; a.items = []; renderAsm(); sfx.pick();
+  if (d.orders.every(o => o.done)) {
+    r.earned += d.total; st.save.wallet += d.total; r.delivery = null;
+    floatAt(LW / 2 - 60, 110, COIN + ar(d.total) + ' جنيه دليفري'); sfx.coin(); updateHud();
+    if (!reduce) { bikeEl.classList.remove('go'); void bikeEl.offsetWidth; bikeEl.classList.add('go'); sfx.bike(); }
+    banner('الطيار خد الطلب، تسلم إيدك!');
+    r.nextDelivery = 40 + Math.random() * 25;
+  }
+  renderDelivery();
+}
+function tickDelivery(dt){
+  const r = st.run, d = r.delivery;
+  if (d) {
+    d.left -= dt; tickDeliveryBar();
+    if (d.left <= 0) { r.delivery = null; renderDelivery(); banner(d.kind === 'bulk' ? 'الورشة لغت الطلب، اتأخرنا عليهم' : 'طلب الدليفري اتلغى، اتأخرنا'); r.nextDelivery = 35 + Math.random() * 20; }
+    return;
+  }
+  if (r.lv.g < 2 || r.t > r.len - 25) return;
+  r.nextDelivery -= dt;
+  if (r.nextDelivery <= 0) startDelivery('normal');
+}
+/* ---- random events ---- */
+function fireEvent(type){
+  const r = st.run;
+  if (type === 'bulk' && r.delivery) type = 'rain';
+  if (type === 'bulk') { startDelivery('bulk'); banner('طلب جملة! الورشة اللي جنبك عايزة ساندوتشات'); }
+  if (type === 'power') { r.power = 12; world.classList.add('dark'); banner('الكهربا قطعت! الطاسة والبطاطس وقفوا'); sfx.wrong(); }
+  if (type === 'rain') { r.rain = 25; $('#rain').classList.add('on'); banner('مطرة! الزباين قليلين بس بيدفعوا أكتر'); }
+}
+function tickEvents(dt){
+  const r = st.run;
+  if (r.evAt >= 0 && r.t >= r.evAt) { r.evAt = -1; fireEvent(r.evType); }
+  if (r.power > 0) { r.power -= dt; if (r.power <= 0) { world.classList.remove('dark'); banner('الكهربا رجعت'); } }
+  if (r.rain > 0) { r.rain -= dt; if (r.rain <= 0) { $('#rain').classList.remove('on'); banner('المطرة وقفت'); } }
+}
+function clearEvents(){ world.classList.remove('dark'); $('#rain').classList.remove('on'); deliveryEl.hidden = true; $('#combo').hidden = true; }
+
 function update(dt){
   const r = st.run;
   r.t += dt;
@@ -1598,12 +1775,14 @@ function update(dt){
     r.next -= dt;
     if (r.next <= 0) {
       const free = r.slots.map((s, i) => !s.c && s.cool <= 0 ? i : -1).filter(i => i >= 0);
-      if (free.length) { spawn(pick(free)); r.next = r.interval * (.75 + Math.random() * .5); }
-      else if (seatCustomer()) r.next = r.interval * (.75 + Math.random() * .5);
+      const gap = r.interval * (.75 + Math.random() * .5) * (r.rain > 0 ? 1.8 : 1);
+      if (free.length) { spawn(pick(free)); r.next = gap; }
+      else if (seatCustomer()) r.next = gap;
       else r.next = .5;
     }
   }
-  tickSeats(dt);
+  tickSeats(dt); tickDelivery(dt); tickEvents(dt);
+  if (st.save.up.helper) { r.helperT -= dt; if (r.helperT <= 0) { r.helperT = st.save.up.helper >= 2 ? .35 : .6; helperAct(); } }
   r.slots.forEach((s, i) => {
     if (s.cool > 0) s.cool -= dt;
     const c = s.c; if (!c) return;
@@ -1615,18 +1794,18 @@ function update(dt){
     c.bar.style.background = `hsl(${f * 120},65%,42%)`;
     if (c.react <= 0) setMood(c, f > .55 ? 'happy' : f > .28 ? 'ok' : 'meh');
     if (c.left <= 0) {
-      r.angry++; setMood(c, 'angry'); react(c, pick(ANGRY), 9); sfx.angry();
+      r.angry++; setMood(c, 'angry'); react(c, pick(ANGRY), 9); sfx.angry(); breakCombo();
       c.state = 'angry';
       const run = r; setTimeout(() => { if (st.run === run) leave(i); }, 800);
       updateHud();
       if (r.angry >= 5 && st.screen === 'play') { st.screen = 'end'; setTimeout(() => endDay('angry'), 900); }
     }
   });
-  r.pan.forEach(pc => { if (pc) pc.t += dt; });
+  if (!(r.power > 0)) r.pan.forEach(pc => { if (pc) pc.t += dt; });
   renderPan();
-  if (r.fry.state === 'frying') { r.fry.t += dt; if (r.fry.t >= fryT()) { r.fry.state = 'ready'; r.fry.stock = r.fry.portions || venue().batch; sfx.pick(); } renderFry(); }
+  if (r.fry.state === 'frying' && !(r.power > 0)) { r.fry.t += dt; if (r.fry.t >= fryT()) { r.fry.state = 'ready'; r.fry.stock = r.fry.portions || venue().batch; sfx.pick(); } renderFry(); }
   updateHud();
-  if (r.t >= r.len && r.slots.every(s => !s.c) && !r.seats.some(Boolean) && st.screen === 'play') endDay('time');
+  if (r.t >= r.len && r.slots.every(s => !s.c) && !r.seats.some(Boolean) && !r.delivery && st.screen === 'play') endDay('time');
 }
 let last = performance.now();
 function frame(now){
@@ -2004,15 +2183,18 @@ function startDay(g){
     slots:slotEls.map(() => ({ c:null, cool:0 })), seats: Array(seatsN()).fill(null),
     pan: Array(Math.min(5, 3 + st.save.up.pan + (isRest() ? 1 : 0))).fill(null),
     fry:{ state:'idle', t:0, stock:0 }, boards: newBoards(), ab:0,
+    combo:0, tray:0, helperT:0, delivery:null, nextDelivery: 25 + Math.random() * 20, power:0, rain:0,
+    evAt: g >= 3 && Math.random() < .65 ? L.len * (.25 + Math.random() * .35) : -1, evType: pick(['bulk','power','rain']),
     get asm(){ return this.boards[this.ab]; } };
   slotEls.forEach((el, i) => resetSlot(i)); renderStock(); renderSeats();
   lastStrikes = -1;
   buildPan(st.run.pan.length); renderPan(); renderFry(); renderAsm(); renderLocks(); updateHud();
   st.screen = 'play'; st.paused = false; $('#pauseBtn').hidden = false;
+  clearEvents(); renderCombo(); renderTray(); renderDelivery();
 }
 function endDay(reason){
   const r = st.run; if (!r) return;
-  st.screen = 'end';
+  st.screen = 'end'; clearEvents();
   const L = r.lv, passed = reason === 'time' && r.earned >= r.target;
   const s = !passed ? 0 : r.earned >= r.target * 1.5 && r.angry <= 1 ? 3 : r.earned >= r.target * 1.25 ? 2 : 1;
   const before = stars(L.g);
@@ -2126,9 +2308,9 @@ function pause(){
     <div class="btns"><button class="btn" id="resumeBtn" type="button">كمّل الشغل</button><button class="btn alt" id="mktBtn" type="button">السوق</button><button class="btn ghost" id="quitBtn" type="button">القائمة</button></div>`);
   on('resumeBtn', resume);
   on('mktBtn', () => showMarket(() => { st.paused = false; pause(); }));
-  on('quitBtn', () => { st.paused = false; persist(); showMap(LV(st.cur).li); });
+  on('quitBtn', () => { st.paused = false; persist(); clearEvents(); showMap(LV(st.cur).li); });
 }
-function resume(){ if (!st.paused) return; st.paused = false; hidePanel(); last = performance.now(); }
+function resume(){ if (!st.paused) return; st.paused = false; hidePanel(); last = performance.now(); renderDelivery(); }
 $('#pauseBtn').addEventListener('click', pause);
 renderStock();
 $('#muteBtn').addEventListener('click', () => { st.muted = !st.muted; store.set('ful.muted', st.muted); syncMute(); if (!st.muted) tone(880, .1, 'sine', .06); });
