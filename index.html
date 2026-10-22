@@ -286,6 +286,18 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
 .pole.rest{width:13px;border-radius:2px;background:linear-gradient(90deg,#b9c1c7,#ffffff 45%,#c9d0d5)}
 .branch{border:2px solid var(--green);background:linear-gradient(135deg,#f3fbf5,#dff3e5)}
 .warn{width:100%;background:#fff4e0;border:2px dashed var(--gold);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600;line-height:1.7;text-align:start}
+/* sidewalk waiting tables */
+.wing{position:absolute;top:296px;width:84px;height:200px;z-index:4;pointer-events:none}
+.seat{position:absolute;left:0;width:84px;height:100px}
+.seat.s0{bottom:0}
+.seat.s1{bottom:96px;transform:scale(.86);transform-origin:50% 100%}
+.seat > svg{position:absolute;inset:0;width:100%;height:100%}
+.seat .who{position:absolute;left:12px;bottom:26px;width:56px;height:70px;transition:opacity .3s}
+.seat .who svg{width:100%;height:100%;display:block}
+.seat .qbar{position:absolute;left:14px;right:14px;bottom:2px;height:6px;border-radius:4px;background:rgba(43,26,15,.25);overflow:hidden;opacity:0}
+.seat.busy .qbar{opacity:1}
+.seat .qbar i{display:block;height:100%;width:100%;background:#3aa557}
+.seat .sfront{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 /* map & level cards */
 .panel.wide{width:min(440px,100%)}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
@@ -380,6 +392,8 @@ textarea.field{width:100%;min-height:76px;resize:vertical;font:600 12px/1.5 ui-m
         <button id="radio" type="button" aria-label="الراديو" hidden><span class="say">مزيكا</span></button>
         <div id="slots">
         </div>
+        <div class="wing" id="wingL" hidden></div>
+        <div class="wing" id="wingR" hidden></div>
         <div class="counter" id="counter">
           <div id="toast"></div>
           <button class="st" id="fryer" type="button" aria-label="البطاطس"></button>
@@ -454,7 +468,9 @@ const UPG = {
   oil:   { name:'زيت جديد',      desc:'الطعمية والبطاطس تتقلي أسرع',      costs:[120, 260] },
   radio: { name:'راديو العربية', desc:'راديو فوق المظلة بيشغّل مزيكا، والزباين يصبروا أكتر وهم بيسمعوا', costs:[100, 220] },
   fridge:{ name:'تلاجة حاجة ساقعة', desc:'الزباين يطلبوا حاجة ساقعة أو مية مع الأكل، وتكسب أكتر', costs:[250] },
-  tables:{ name:'ترابيزات', desc:'زباين يقعدوا على ترابيزة وتوصّلهم الأكل، طلبهم أكبر وبيدفعوا أكتر', costs:[300, 650] }
+  tables:{ name:'ترابيزات', desc:'زباين يقعدوا على ترابيزة وتوصّلهم الأكل، طلبهم أكبر وبيدفعوا أكتر', costs:[300, 650] },
+  patience:{ name:'صبر الزباين', desc:'ابتسامة وكوباية مية ببلاش، فالزباين يستنوا وقت أطول قبل ما يزهقوا', costs:[200, 450, 900] },
+  bench:{ name:'ترابيزات على الرصيف', desc:'ترابيزات يمين وشمال العربية: لو المكان زحمة، الزبون يقعد يرتاح لحد ما يفضى مكان', costs:[350, 750] }
 };
 const THANKS = ['تسلم إيدك يا عم صابر!','الله ينوّر يا معلم!','أحلى فطار والله!','يا سلام عليك!','ربنا يزيدك!'];
 const WRONG  = ['لأ يا معلم، مش ده طلبي!','إيه ده؟ ركّز معايا!','أنا طالب حاجة تانية!'];
@@ -1183,7 +1199,7 @@ const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 function profiles(){ const p = store.get(PROFILES_KEY, null); return p && Array.isArray(p.list) ? p : { list:[], current:null }; }
 function normSave(raw){
   raw = raw || {};
-  const sv = { v:2, wallet: raw.wallet || 0, up: Object.assign({ pan:0, oil:0, radio:0, cart:0, fridge:0, tables:0 }, raw.up || {}), stars: Object.assign({}, raw.stars || {}), at: raw.at || 0,
+  const sv = { v:2, wallet: raw.wallet || 0, up: Object.assign({ pan:0, oil:0, radio:0, cart:0, fridge:0, tables:0, patience:0, bench:0 }, raw.up || {}), stars: Object.assign({}, raw.stars || {}), at: raw.at || 0,
     branches: Object.assign({}, raw.branches || {}), stock: Object.assign({}, raw.stock || {}) };
   if (!raw.stock) { const fresh = !raw.wallet && !Object.keys(sv.stars).length; MARKET.forEach(m => { sv.stock[m.k] = fresh ? (['bread','foul','taameya'].includes(m.k) ? 20 : 0) : 25; }); }
   MARKET.forEach(m => { sv.stock[m.k] = Math.max(0, Math.round(Number(sv.stock[m.k]) || 0)); });
@@ -1447,16 +1463,85 @@ function fillSlot(i, c){
   c.el = el; c.bar = el.querySelector('.pbar i'); c.bub = el.querySelector('.bubble'); c.per = el.querySelector('.person'); c.re = el.querySelector('.react');
   void el.offsetWidth; el.classList.add('enter');
 }
-function spawn(i){
-  const r = st.run, L = r.lv, p = genPerson();
+function personFor(L){
+  const p = genPerson();
   if (L.loc.key === 'uni' && !p.female && p.head !== 'taqiya' && Math.random() < .45) { p.top = 'hoodie'; p.tc = pick(TOPC); p.head = pick(['short','cap']); p.cc = p.cc || '#1d4f9c'; p.mus = false; }
   if (L.loc.key === 'metro' && !p.female && p.head !== 'taqiya' && Math.random() < .35) { p.top = 'suit'; p.tc = pick(['#2b2f3a','#3a3f4f','#4a3b2f']); }
+  return p;
+}
+const patMult = () => (1 + .18 * st.save.up.radio) * (1 + .15 * (st.save.up.patience || 0)) * venue().pat;
+function spawn(i, waiting){
+  const r = st.run, L = r.lv, p = waiting ? waiting.p : personFor(L);
   const kind = kindOf(p, L.unlock), seated = tableSlot(i);
-  const max = L.pat * KIND[kind].pat * (1 + .18 * st.save.up.radio) * venue().pat * (seated ? 1.35 : 1);
+  const max = L.pat * KIND[kind].pat * patMult() * (seated ? 1.35 : 1);
   const o = genOrder(L.unlock, kind, seated);
   o.price = Math.round(o.price * L.loc.mult * venue().mult * (seated ? 1.25 : 1));
-  const c = { p, kind, seated, tip: KIND[kind].tip, o, max, left:max, mood:'happy', state:'wait', react:0 };
-  r.slots[i].c = c; fillSlot(i, c); sfx.bell();
+  const left = waiting ? Math.max(max * .3, max * waiting.left / waiting.max) : max;
+  const c = { p, kind, seated, tip: KIND[kind].tip, o, max, left, mood:'happy', state:'wait', react:0 };
+  r.slots[i].c = c; fillSlot(i, c); if (!waiting) sfx.bell();
+}
+/* ---- sidewalk waiting seats ---- */
+const wingL = $('#wingL'), wingR = $('#wingR');
+const WING = 84;
+const wingW = () => st.save.up.bench ? WING : 0;
+const seatsN = () => 2 * Math.min(2, st.save.up.bench || 0);
+const SEAT_SVG = side => `<svg viewBox="0 0 84 100" aria-hidden="true"><ellipse cx="42" cy="96" rx="36" ry="4" fill="#000" opacity=".2"/>
+<rect x="18" y="34" width="46" height="40" rx="9" fill="${side ? '#1e88e5' : '#d32f2f'}"/><path d="M24 40h34M24 48h34M24 56h34" stroke="#fff" stroke-width="2" opacity=".35"/>
+<path d="M22 76l-5 20M62 76l5 20M30 78l-2 16M54 78l2 16" stroke="${side ? '#1565c0' : '#b71c1c'}" stroke-width="4" stroke-linecap="round"/></svg>`;
+const SEAT_FRONT = side => `<svg class="sfront" viewBox="0 0 84 100" aria-hidden="true"><rect x="14" y="70" width="56" height="9" rx="3" fill="${side ? '#42a5f5' : '#e53935'}"/>
+<ellipse cx="${side ? 10 : 74}" cy="70" rx="14" ry="4.5" fill="#f4f4f2" stroke="#9aa5ad" stroke-width="1.4"/><path d="M${side ? 10 : 74} 70v26" stroke="#9aa5ad" stroke-width="3"/>
+<path d="M${side ? 6 : 70} 60h7l-1 9h-5z" fill="#c98a45" stroke="#fff" stroke-width=".8"/></svg>`;
+function buildWings(){
+  const n = Math.min(2, st.save.up.bench || 0);
+  [wingL, wingR].forEach((w, side) => {
+    w.hidden = !n;
+    w.style.left = (side ? LW : -WING) + 'px';
+    w.innerHTML = Array.from({ length:n }, (_, k) => `<div class="seat s${k}">${SEAT_SVG(side)}<div class="who"></div>${SEAT_FRONT(side)}<div class="qbar"><i></i></div></div>`).join('');
+  });
+}
+function seatEl(k){ const w = k % 2 ? wingR : wingL; return w.querySelectorAll('.seat')[Math.floor(k / 2)]; }
+function renderSeats(){
+  const r = st.run, n = seatsN();
+  for (let k = 0; k < n; k++) {
+    const el = seatEl(k); if (!el) continue;
+    const c = r && r.seats ? r.seats[k] : null, who = el.querySelector('.who');
+    el.classList.toggle('busy', !!c);
+    if (!c) { if (who.dataset.k) { who.innerHTML = ''; who.dataset.k = ''; } continue; }
+    const key = c.id + c.mood;
+    if (who.dataset.k !== key) { who.innerHTML = personSVG(c.p, c.mood); who.dataset.k = key; }
+    const f = Math.max(0, c.left / c.max), bar = el.querySelector('.qbar i');
+    bar.style.width = (f * 100) + '%'; bar.style.background = `hsl(${f * 120},65%,42%)`;
+  }
+}
+let waitId = 0;
+function seatCustomer(){
+  const r = st.run, k = r.seats.findIndex(x => !x);
+  if (k < 0) return false;
+  const L = r.lv, max = L.pat * patMult() * 1.2;
+  r.seats[k] = { id: ++waitId, p: personFor(L), arr: r.t, max, left: max, mood:'happy' };
+  sfx.bell(); renderSeats(); return true;
+}
+function seatToSlot(i){
+  const r = st.run;
+  let best = -1;
+  r.seats.forEach((c, k) => { if (c && (best < 0 || c.arr < r.seats[best].arr)) best = k; });
+  if (best < 0) return false;
+  const w = r.seats[best]; r.seats[best] = null; renderSeats();
+  spawn(i, w); return true;
+}
+function tickSeats(dt){
+  const r = st.run;
+  r.seats.forEach((c, k) => {
+    if (!c) return;
+    c.left -= dt * .35;
+    const f = c.left / c.max;
+    c.mood = f > .55 ? 'happy' : f > .28 ? 'ok' : 'meh';
+    if (c.left <= 0) {
+      r.seats[k] = null; r.angry++; sfx.angry(); toast('زبون زهق من الانتظار ومشي'); updateHud();
+      if (r.angry >= 3 && st.screen === 'play') { st.screen = 'end'; setTimeout(() => endDay('angry'), 900); }
+    }
+  });
+  renderSeats();
 }
 function setMood(c, m){ if (c.mood !== m) { c.mood = m; c.per.innerHTML = personSVG(c.p, m); } }
 function react(c, text, dur){ c.re.textContent = text; c.bub.classList.add('reacting'); c.react = dur; }
@@ -1521,14 +1606,17 @@ function updateHud(){
 function update(dt){
   const r = st.run;
   r.t += dt;
+  r.slots.forEach((s, i) => { if (!s.c && s.cool <= 0 && r.seats.some(Boolean)) seatToSlot(i); });
   if (r.t < r.len) {
     r.next -= dt;
     if (r.next <= 0) {
       const free = r.slots.map((s, i) => !s.c && s.cool <= 0 ? i : -1).filter(i => i >= 0);
       if (free.length) { spawn(pick(free)); r.next = r.interval * (.75 + Math.random() * .5); }
+      else if (seatCustomer()) r.next = r.interval * (.75 + Math.random() * .5);
       else r.next = .5;
     }
   }
+  tickSeats(dt);
   r.slots.forEach((s, i) => {
     if (s.cool > 0) s.cool -= dt;
     const c = s.c; if (!c) return;
@@ -1551,7 +1639,7 @@ function update(dt){
   renderPan();
   if (r.fry.state === 'frying') { r.fry.t += dt; if (r.fry.t >= fryT()) { r.fry.state = 'ready'; r.fry.stock = r.fry.portions || venue().batch; sfx.pick(); } renderFry(); }
   updateHud();
-  if (r.t >= r.len && r.slots.every(s => !s.c) && st.screen === 'play') endDay('time');
+  if (r.t >= r.len && r.slots.every(s => !s.c) && !r.seats.some(Boolean) && st.screen === 'play') endDay('time');
 }
 let last = performance.now();
 function frame(now){
@@ -1705,7 +1793,7 @@ function applyCart(){
   panEl.style.transform = rest ? 'scale(1.2)' : t ? `scale(${1 + t * .08})` : '';
   const ns = rest ? REST.slots : CART_SLOTS[t];
   if (slotEls.length !== ns) buildSlots(ns); else slotEls.forEach((el, i) => { if (!el.classList.contains('occupied')) resetSlot(i); });
-  renderStock();
+  renderStock(); buildWings(); renderSeats();
   lastW = 0; layout();
 }
 function applyLoc(){
@@ -1927,10 +2015,10 @@ function startDay(g){
   st.cur = g; applyLoc();
   const L = LV(g);
   st.run = { lv:L, t:0, len:L.len, interval:L.interval, earned:0, served:0, angry:0, next:1.2, target:L.target,
-    slots:slotEls.map(() => ({ c:null, cool:0 })),
+    slots:slotEls.map(() => ({ c:null, cool:0 })), seats: Array(seatsN()).fill(null),
     pan: Array(Math.min(5, 3 + st.save.up.pan + (isRest() ? 1 : 0))).fill(null),
     fry:{ state:'idle', t:0, stock:0 }, asm:{ type:null, items:[] } };
-  slotEls.forEach((el, i) => resetSlot(i)); renderStock();
+  slotEls.forEach((el, i) => resetSlot(i)); renderStock(); renderSeats();
   lastStrikes = -1;
   buildPan(st.run.pan.length); renderPan(); renderFry(); renderAsm(); renderLocks(); updateHud();
   st.screen = 'play'; st.paused = false; $('#pauseBtn').hidden = false;
@@ -2068,7 +2156,7 @@ let lastW = 0;
 function layout(){
   const pr = play.getBoundingClientRect();
   if (!pr.width || !pr.height) return;
-  const s = Math.min(pr.width / LW, pr.height / LH);
+  const s = Math.min(pr.width / (LW + 2 * wingW()), pr.height / LH);
   const W = Math.ceil(pr.width / s) + 2;
   world.style.width = W + 'px'; world.style.height = LH + 'px';
   world.style.transform = `scale(${s})`;
