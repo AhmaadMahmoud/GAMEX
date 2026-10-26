@@ -1449,6 +1449,7 @@ const MARKET = [
   { k:'soda',    name:'حاجة ساقعة',   pack:10, price:60, icon:'soda', fridge:true },
   { k:'water',   name:'مية',          pack:10, price:30, icon:'water', fridge:true }
 ];
+const RICH = 15000;
 const PROFILES_KEY = 'ful.players';
 const cleanName = n => String(n || '').replace(/[<>&"]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -1456,7 +1457,7 @@ function profiles(){ const p = store.get(PROFILES_KEY, null); return p && Array.
 function normSave(raw){
   raw = raw || {};
   const sv = { v:2, wallet: raw.wallet || 0, up: Object.assign({ pan:0, oil:0, radio:0, cart:0, fridge:0, tables:0, patience:0, bench:0, boards:0, helper:0 }, raw.up || {}), stars: Object.assign({}, raw.stars || {}), at: raw.at || 0,
-    branches: Object.assign({}, raw.branches || {}), stock: Object.assign({}, raw.stock || {}), kebda: !!raw.kebda };
+    branches: Object.assign({}, raw.branches || {}), stock: Object.assign({}, raw.stock || {}), kebda: !!raw.kebda, rich: !!raw.rich || (raw.wallet || 0) >= RICH };
   if (!raw.stock) { const fresh = !raw.wallet && !Object.keys(sv.stars).length; MARKET.forEach(m => { sv.stock[m.k] = m.biz ? 0 : fresh ? (['bread','foul','taameya'].includes(m.k) ? 20 : 0) : 25; }); }
   MARKET.forEach(m => { sv.stock[m.k] = Math.max(0, Math.round(Number(sv.stock[m.k]) || 0)); });
   if (!raw.v && raw.day > 1) for (let g = 0; g < Math.min(raw.day - 1, 5); g++) sv.stars[g] = Math.max(sv.stars[g] || 0, 1);
@@ -1473,7 +1474,8 @@ st.save = loadSave(st.player);
 let curLocKey = 'hara|day';
 const stars = g => st.save.stars[g] || 0;
 const locStars = li => [0, 1, 2, 3, 4].reduce((a, n) => a + stars(li * 5 + n), 0);
-const locOpen = li => li === 0 || (LOCS[li].req !== undefined ? stars(LOCS[li].req) > 0 && (LOCS[li].biz !== 'kebda' || st.save.kebda) : (stars(li * 5 - 1) > 0 && (LOCS[li].rest ? !!st.save.branches[LOCS[li].key] : st.save.up.cart >= LOCS[li].cart)));
+const richOpen = li => LOCS[li].biz === 'kebda' && st.save.rich && st.save.kebda;
+const locOpen = li => li === 0 || richOpen(li) || (LOCS[li].req !== undefined ? stars(LOCS[li].req) > 0 && (LOCS[li].biz !== 'kebda' || st.save.kebda) : (stars(li * 5 - 1) > 0 && (LOCS[li].rest ? !!st.save.branches[LOCS[li].key] : st.save.up.cart >= LOCS[li].cart)));
 const isRest = () => !!LV(st.cur).loc.rest;
 const biz = () => LV(st.cur).loc.biz || 'ful';
 const KEBDA = { name:'عربية كبدة', mult:1.55, pat:1.1, batch:5, w:550, slots:4, cost:6000 };
@@ -1483,7 +1485,7 @@ const BIZ = {
 };
 const B = () => BIZ[biz()];
 const venue = () => isRest() ? REST : biz() === 'kebda' ? KEBDA : CART[st.save.up.cart];
-const levelOpen = g => g >= 0 && g < LEVELS && locOpen(Math.floor(g / 5)) && (g % 5 === 0 || stars(g - 1) > 0);
+const levelOpen = g => g >= 0 && g < LEVELS && locOpen(Math.floor(g / 5)) && (g % 5 === 0 || stars(g - 1) > 0 || richOpen(Math.floor(g / 5)));
 const frontier = () => { let g = 0; while (g + 1 < LEVELS && levelOpen(g + 1)) g++; return g; };
 const unlockLv = () => LV(st.cur).unlock;
 const cart = () => CART[st.save.up.cart];
@@ -1575,6 +1577,7 @@ const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
 function syncMute(){ const b = $('#muteBtn'); b.innerHTML = st.muted ? ICON_OFF : ICON_ON; b.setAttribute('aria-label', st.muted ? 'تشغيل الصوت' : 'كتم الصوت'); }
 function persist(){
+  if (st.save.wallet >= RICH && !st.save.rich) { st.save.rich = true; if (typeof banner === 'function') banner('جمعت ١٥ ألف جنيه! ليفلات المعادي ومراسي اتفتحت كلها لعربية الكبدة', 4000); }
   st.save.at = Date.now();
   if (st.player) store.set('ful.save.' + st.player, st.save);
   cloudPush();
@@ -2441,7 +2444,7 @@ function showMap(li){
   else {
     const needs = [];
     const reqG = loc.req !== undefined ? loc.req : li * 5 - 1;
-    if (stars(reqG) === 0) needs.push(`خلّص يوم الزحمة في ${LOCS[Math.floor(reqG / 5)].name}`);
+    if (stars(reqG) === 0) needs.push(`خلّص يوم الزحمة في ${LOCS[Math.floor(reqG / 5)].name}${loc.biz === 'kebda' && !st.save.rich ? '، أو اجمع ' + ar(RICH) + ' جنيه في الدرج' : ''}`);
     if (loc.biz === 'kebda' && !st.save.kebda) needs.push(`اشتري عربية كبدة من "طوّر شغلك" بـ ${ar(KEBDA.cost)} جنيه`);
     if (loc.rest && !st.save.branches[loc.key]) needs.push(`افتح فرع ${loc.name} من "طوّر شغلك" بـ ${ar(loc.cost)} جنيه`);
     else if (!loc.rest && st.save.up.cart < loc.cart) needs.push(`كبّر العربية لحد ما تبقى ${CART[loc.cart].name}`);
